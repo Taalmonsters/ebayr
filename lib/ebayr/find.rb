@@ -11,6 +11,7 @@ module Ebayr #:nodoc:
     def initialize(command, options = {})
       @command = self.class.camelize(command.to_s)
       @uri = options.delete(:uri) || 'http://svcs.ebay.com/services/search/FindingService/v1'
+      @xmlns = @uri.include?('shopping') ? 'urn:ebay:apis:eBLBaseComponents' : 'http://www.ebay.com/marketplace/search/v1/services'
       @uri = URI.parse(@uri) unless @uri.is_a? URI
       @global_id = options.delete(:global_id) || 'EBAY-US'
       @version = options.delete(:version) || '1.13.0'
@@ -33,22 +34,33 @@ module Ebayr #:nodoc:
 
     # Gets the headers that will be sent with this request.
     def headers
-      {
-        'X-EBAY-SOA-SERVICE-NAME' => 'FindingService',
-        'X-EBAY-SOA-OPERATION-NAME' => @command.to_s,
-        'X-EBAY-SOA-SERVICE-VERSION' => @version,
-        'X-EBAY-SOA-GLOBAL-ID' => @global_id,
-        'X-EBAY-SOA-SECURITY-APPNAME' => app_id.to_s,
-        'X-EBAY-SOA-REQUEST-DATA-FORMAT' => 'XML',
-        'Content-Type' => 'text/xml'
-      }
+      if @xmlns.eql?('urn:ebay:apis:eBLBaseComponents')
+        return {
+          'X-EBAY-API-CALL-NAME' => @command.to_s,
+          'X-EBAY-API-VERSION' => '981',
+          'X-EBAY-API-SITE-ID' => '100',
+          'X-EBAY-API-APP-ID' => app_id.to_s,
+          'X-EBAY-API-REQUEST-ENCODING' => 'XML',
+          'Content-Type' => 'text/xml'
+        }
+      else
+        return {
+          'X-EBAY-SOA-SERVICE-NAME' => 'FindingService',
+          'X-EBAY-SOA-OPERATION-NAME' => @command.to_s,
+          'X-EBAY-SOA-SERVICE-VERSION' => @version,
+          'X-EBAY-SOA-GLOBAL-ID' => @global_id,
+          'X-EBAY-SOA-SECURITY-APPNAME' => app_id.to_s,
+          'X-EBAY-SOA-REQUEST-DATA-FORMAT' => 'XML',
+          'Content-Type' => 'text/xml'
+        }
+      end
     end
 
     # Gets the body of this request (which is XML)
     def body
       <<-XML
 <?xml version="1.0" encoding="utf-8"?>
-        <#{@command}Request xmlns="http://www.ebay.com/marketplace/search/v1/services">
+        <#{@command}Request xmlns="#{@xmlns}">
           #{requester_credentials_xml}
           #{input_xml}
         </#{@command}Request>
