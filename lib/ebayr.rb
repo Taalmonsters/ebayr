@@ -7,6 +7,7 @@ require 'active_support/core_ext/hash/conversions'
 # A library to assist in using the eBay Trading API.
 module Ebayr
   autoload :Record,   File.expand_path('../ebayr/record', __FILE__)
+  autoload :Find,  File.expand_path('../ebayr/find',  __FILE__)
   autoload :Request,  File.expand_path('../ebayr/request',  __FILE__)
   autoload :Response, File.expand_path('../ebayr/response', __FILE__)
   autoload :User,     File.expand_path('../ebayr/user',     __FILE__)
