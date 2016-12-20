@@ -24,9 +24,7 @@ module Ebayr #:nodoc:
     end
     
     def input_xml
-      input = self.class.xml(@input)
-      puts input
-      return input
+      self.class.xml(@input)
     end
 
     # Gets the path to which this request will be posted
