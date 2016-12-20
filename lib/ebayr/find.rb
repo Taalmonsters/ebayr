@@ -11,7 +11,7 @@ module Ebayr #:nodoc:
     def initialize(command, options = {})
       @command = self.class.camelize(command.to_s)
       @uri = options.delete(:uri) || 'http://svcs.ebay.com/services/search/FindingService/v1'
-      @xmlns = @uri.include?('shopping') ? 'urn:ebay:apis:eBLBaseComponents' : 'http://www.ebay.com/marketplace/search/v1/services'
+      @xmlns = !@uri.include?('FindingService') ? 'urn:ebay:apis:eBLBaseComponents' : 'http://www.ebay.com/marketplace/search/v1/services'
       @uri = URI.parse(@uri) unless @uri.is_a? URI
       @global_id = options.delete(:global_id) || 'EBAY-US'
       @version = options.delete(:version) || '1.13.0'
@@ -24,7 +24,9 @@ module Ebayr #:nodoc:
     end
     
     def input_xml
-      self.class.xml(@input)
+      input = self.class.xml(@input)
+      puts input
+      return input
     end
 
     # Gets the path to which this request will be posted
@@ -38,7 +40,7 @@ module Ebayr #:nodoc:
         return {
           'X-EBAY-API-CALL-NAME' => @command.to_s,
           'X-EBAY-API-VERSION' => '981',
-          'X-EBAY-API-SITE-ID' => '100',
+          'X-EBAY-API-SITE-ID' => @site_id.to_s,
           'X-EBAY-API-APP-ID' => app_id.to_s,
           'X-EBAY-API-REQUEST-ENCODING' => 'XML',
           'Content-Type' => 'text/xml'
@@ -112,7 +114,13 @@ module Ebayr #:nodoc:
     def self.xml(*args)
       args.map do |structure|
         case structure
-          when Hash then structure.map { |k, v| "<#{k.to_s}>#{xml(v)}</#{k.to_s}>" }.join
+          when Hash then structure.map do |k, v|
+            if v.is_a?(Array)
+              v.map{|vv| "<#{k.to_s}>#{xml(vv)}</#{k.to_s}>" }
+            else
+              "<#{k.to_s}>#{xml(v)}</#{k.to_s}>"
+            end
+          end.join
           when Array then structure.map { |v| xml(v) }.join
           else self.serialize_input(structure).to_s
         end
